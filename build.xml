@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+
+<project name="OptionBooking" basedir="." default="usage">
+    <property file="build.properties"/>
+
+    <property name="src.dir"   value="src"/>
+    <property name="lib.dir"   value="lib"/>
+    <property name="build.dir" value="classes"/>
+    <property name="web.dir"   value="ob"/>
+    <property name="name" value="optcalc"/>
+
+    <path id="master-classpath">
+        <fileset dir="${lib.dir}">
+            <include name="*.jar"/>
+        </fileset>
+        <pathelement path="${build.dir}"/>
+    </path>
+
+    <target name="usage">
+        <echo message=""/>
+        <echo message="${name} build file"/>
+        <echo message="-----------------------------------"/>
+        <echo message=""/>
+        <echo message="Available targets are:"/>
+        <echo message=""/>
+        <echo message="build     --> Build the application"/>
+        <echo message="install   --> Install application"/>
+        <echo message=""/>
+    </target>
+
+    <target name="build" description="Compile main source tree java files">
+        <mkdir dir="${build.dir}"/>
+        <javac destdir="${build.dir}" target="1.8" debug="true"
+               deprecation="false" optimize="false" failonerror="true">
+            <src path="${src.dir}"/>
+            <classpath refid="master-classpath"/>
+        </javac>
+    </target>
+
+    <target name="deployweb" depends="buildweb" description="Deploy application as a JAR file">
+        <tstamp>
+            <format property="touch.time" pattern="yyyyMMdd_hhmmss"/>
+        </tstamp>
+    	<property name="bkup.dir"   value="${backup.path}/${touch.time}"/>
+    	<echo  message="${backup.path}/${touch.time}"/>
+        <mkdir dir="${bkup.dir}"/>
+        <copy todir="${bkup.dir}">
+	        <fileset dir="${deploy.prod.path}"/>
+        </copy>
+
+        <copy todir="${deploy.prod.path}">
+            <fileset dir="${web.dir}"/>
+        </copy>
+    </target>
+
+    <target name="buildweb" depends="buildjar" description="Build web dir">
+        <mkdir dir="${web.dir}"/>
+        <mkdir dir="${web.dir}/lib"/>
+
+        <copy file="./${name}.jar" tofile="${web.dir}/lib/${name}.jar"/>
+        <copy file="./etc/ob.jnlp"     tofile="${web.dir}/ob.jnlp"/>
+        <copy file="./etc/test.jnlp"   tofile="${web.dir}/test.jnlp"/>
+        <copy todir="${web.dir}/lib">
+		  <fileset dir="${lib.dir}"/>
+        </copy>
+        <signjar
+        	alias="tamageta"
+        	storepass="tamageta123"
+        	keystore="keys"
+       	>
+            <path>
+                <fileset dir="${web.dir}/lib" includes="**/*.jar" excludes="**/quickfixj-all-*.jar" />
+            </path>
+        </signjar>
+    </target>
+
+    <target name="buildjar" depends="build" description="Build application as a WAR file">
+        <copy todir="${build.dir}">
+            <fileset dir="${src.dir}">
+                <exclude name="**/*.java"/>
+            </fileset>
+        </copy>
+        <jar destfile="${name}.jar">
+            <fileset dir="${build.dir}">
+                <include name="com/**/*.*"/>
+            </fileset>
+        </jar>
+        <!--
+        <signjar
+        	jar="${name}.jar"
+        	alias="tamageta"
+        	storepass="tamageta123"
+        	keystore="keys"
+        	signedjar="_${name}.jar"
+       	/>
+        --> 
+    </target>
+
+    <target name="clean" description="Clean">
+	<delete dir="${build.dir}"/>
+	<delete file="${name}.jar" />
+	<delete dir="${web.dir}"/>
+    </target>
+</project>

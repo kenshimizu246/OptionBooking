@@ -1,0 +1,3 @@
+jarsigner -keystore keys optcalc.jar tamageta
+
+password is tamageta123
